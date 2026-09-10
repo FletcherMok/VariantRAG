@@ -7,8 +7,11 @@ from huggingface_hub import HfApi, snapshot_download
 
 root = Path("backend/data/models/medcpt")
 manifest = {}
-for folder, repo in [("query", "ncbi/MedCPT-Query-Encoder"), ("article", "ncbi/MedCPT-Article-Encoder")]:
-    info = HfApi().model_info(repo)
+for folder, repo, revision in [
+    ("query", "ncbi/MedCPT-Query-Encoder", "d83a36cc6b8e3a5c5e9d9d6ba156808c1643dcbc"),
+    ("article", "ncbi/MedCPT-Article-Encoder", "d05a736da4bb84ee4057b7f7999485be6ed85465"),
+]:
+    info = HfApi().model_info(repo, revision=revision)
     filenames = {file.rfilename for file in info.siblings}
     weights = "model.safetensors" if "model.safetensors" in filenames else "pytorch_model.bin"
     snapshot_download(

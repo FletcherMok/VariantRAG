@@ -45,7 +45,10 @@ def test_bounded_snapshot_filters_variants_and_genes(tmp_path, monkeypatch):
         return {"url": url, "sha256": hashlib.sha256(payload).hexdigest()}
 
     monkeypatch.setattr("variantrag.snapshots.download", fake_download)
-    monkeypatch.setattr("variantrag.snapshots.subprocess.check_output", lambda *a, **k: "a" * 40)
+    monkeypatch.setattr(
+        "variantrag.snapshots.subprocess.check_output",
+        lambda args, **k: "a" * 40 if "rev-parse" in args else "",
+    )
     out = tmp_path / "bounded"
     bounded_refresh(checkout, out, "a" * 40, ["10"])
     from variantrag.io import read_json

@@ -20,8 +20,13 @@ def read_json(path):
 def write_json(path, value):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as stream:
-        json.dump(value, stream, indent=2, allow_nan=False, sort_keys=True)
-        stream.write("\n")
-        temporary = stream.name
-    os.replace(temporary, path)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as stream:
+            temporary = stream.name
+            json.dump(value, stream, separators=(",", ":"), allow_nan=False, sort_keys=True)
+            stream.write("\n")
+        os.replace(temporary, path)
+    finally:
+        if temporary:
+            Path(temporary).unlink(missing_ok=True)

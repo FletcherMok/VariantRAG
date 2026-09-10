@@ -53,6 +53,10 @@ def bounded_refresh(checkout, output, revision, variant_ids):
         raise ValueError("Provide numeric ClinVar Variation IDs for a bounded snapshot")
     checkout, output = Path(checkout).resolve(), Path(output).resolve()
     actual = subprocess.check_output(["git", "-C", str(checkout), "rev-parse", "HEAD"], text=True).strip()
+    if subprocess.check_output(
+        ["git", "-C", str(checkout), "status", "--porcelain", "--untracked-files=no"], text=True
+    ).strip():
+        raise ValueError("CATT checkout has modified tracked files")
     if actual != revision:
         raise ValueError("CATT checkout does not match the full commit SHA")
     if output.exists():
@@ -83,7 +87,7 @@ def bounded_refresh(checkout, output, revision, variant_ids):
                 checksum = Path(temporary) / "checksum"
                 download(config["md5_url"], checksum)
                 expected = checksum.read_text().split()[0]
-                hasher = hashlib.md5()
+                hasher = hashlib.md5(usedforsecurity=False)
                 with archive.open("rb") as stream:
                     for block in iter(lambda: stream.read(1024 * 1024), b""):
                         hasher.update(block)
@@ -146,9 +150,7 @@ def bounded_refresh(checkout, output, revision, variant_ids):
             "variant_ids": sorted(ids),
             "variant_genes": {v: sorted(g) for v, g in variant_genes.items()},
             "sources": source_manifest,
-            "files": {
-                str(p.relative_to(stage)): digest(p) for p in (stage / "sources").rglob("*") if p.is_file()
-            },
+            "files": {str(p.relative_to(stage)): digest(p) for p in stage.rglob("*") if p.is_file()},
             "source_data_files": [
                 str(
                     Path("sources")

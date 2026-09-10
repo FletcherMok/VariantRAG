@@ -11,3 +11,10 @@ results
 work
 .nextflow*
 .env
+
+build
+dist
+.venv-*
+*.bai
+*.tbi
+.git*

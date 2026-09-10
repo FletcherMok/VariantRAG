@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this research software, cite the repository and the exact commit. Cite upstream methods and data separately."
+title: "VariantRAG: an inspectable variant evidence workbench"
+authors:
+  - family-names: Mok
+    given-names: Fletcher
+type: software
+license: MIT
+repository-code: "https://github.com/FletcherMok/VariantRAG"

@@ -34,7 +34,7 @@ def resolve_clinvar(variant, http):
             {"db": "clinvar", "id": ",".join(ids), "rettype": "vcv", "is_variationid": "true"},
             response_format="text",
         )
-        import xml.etree.ElementTree as ET
+        from defusedxml import ElementTree as ET
 
         root = ET.fromstring(xml)
         matches, confirmations = [], []
@@ -128,6 +128,10 @@ def normalize(variant, http, url):
 def refresh_catt(checkout, output, revision):
     checkout, output = Path(checkout).resolve(), Path(output).resolve()
     actual = subprocess.check_output(["git", "-C", str(checkout), "rev-parse", "HEAD"], text=True).strip()
+    if subprocess.check_output(
+        ["git", "-C", str(checkout), "status", "--porcelain", "--untracked-files=no"], text=True
+    ).strip():
+        raise ValueError("CATT checkout has modified tracked files")
     if actual != revision:
         raise ValueError("CATT checkout does not match the requested full commit hash")
     if output.exists():
@@ -143,17 +147,23 @@ def refresh_catt(checkout, output, revision):
         subprocess.run(
             [sys.executable, "main.py", "--force", "--loglevel=info"], cwd=stage, check=True, timeout=7200
         )
-        files = {str(p.relative_to(stage)): digest(p) for p in (stage / "sources").rglob("*") if p.is_file()}
-        # Require nonempty downloaded data, not only source configuration files.
-        data_files = [
-            p
-            for p in (stage / "sources").rglob("*")
-            if p.is_file()
-            and p.name not in {"config.yml", "dictionary.csv", "mapping.csv"}
-            and p.stat().st_size > 0
-        ]
-        if not data_files:
-            raise ValueError("Refresh produced no nonempty source data")
+        files = {str(p.relative_to(stage)): digest(p) for p in stage.rglob("*") if p.is_file()}
+        # Require actual configured release files, not README/transform scripts.
+        import yaml
+
+        data_files = []
+        for name in (
+            "clinvar-variant-summary",
+            "clinvar-submission-summary",
+            "gencc-submissions",
+            "clingen-gene-disease",
+        ):
+            folder = stage / "sources" / name
+            config = yaml.safe_load((folder / "config.yml").read_text())[0]
+            path = (folder / config["file"]).resolve()
+            if not path.is_relative_to(stage.resolve()) or not path.is_file() or not path.stat().st_size:
+                raise ValueError(f"Refresh did not produce configured release data for {name}")
+            data_files.append(path)
         write_json(
             stage / "manifest.json",
             {
@@ -169,6 +179,19 @@ def refresh_catt(checkout, output, revision):
 def query_catt(variation_id, snapshot, output):
     snapshot, output = Path(snapshot).resolve(), Path(output).resolve()
     manifest = read_json(snapshot / "manifest.json")
+    if "main.py" not in manifest["files"]:
+        raise ValueError(
+            "Legacy snapshot lacks executable checksums; rebuild or migrate the trusted snapshot"
+        )
+    for entry in snapshot.rglob("*"):
+        if entry.is_symlink():
+            raise ValueError("Snapshot symlinks are not allowed")
+        if (
+            entry.is_file()
+            and entry != snapshot / "manifest.json"
+            and str(entry.relative_to(snapshot)) not in manifest["files"]
+        ):
+            raise ValueError("Snapshot contains unchecked executable or data files")
     for name, expected in manifest["files"].items():
         path = (snapshot / name).resolve()
         if not path.is_relative_to(snapshot) or digest(path) != expected:

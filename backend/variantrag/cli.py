@@ -23,7 +23,7 @@ def main():
     rerank = commands.add_parser("rank")
     rerank.add_argument("--bundles", required=True)
     rerank.add_argument("--out", required=True)
-    rerank.add_argument("--pair-budget", type=int, default=120)
+    rerank.add_argument("--pair-budget", type=int, default=None)
     rerank.add_argument("--ollama-model")
     rerank.add_argument("--judgments-dir", default="results/judgments")
     parse = commands.add_parser("parse")

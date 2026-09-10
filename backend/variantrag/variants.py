@@ -41,9 +41,20 @@ def annotation_fields(reader, name):
     raise ValueError(f"{name} header lacks named annotation fields; use annotated VEP CSQ or SnpEff ANN")
 
 
-def parse_variants(vcf, build, sample=None, reference=None):
+def parse_variants(vcf, build, sample=None, reference=None, max_records=100000, max_candidates=1000):
     if build not in {"GRCh37", "GRCh38"}:
         raise ValueError("genome_build must be GRCh37 or GRCh38")
+    with open(vcf, "rb") as stream:
+        compressed = stream.read(2) == b"\x1f\x8b"
+    if compressed:
+        import gzip
+
+        expanded = 0
+        with gzip.open(vcf, "rb") as stream:
+            while chunk := stream.read(1024 * 1024):
+                expanded += len(chunk)
+                if expanded > 100 * 1024**2:
+                    raise ValueError("Decompressed VCF exceeds 100 MiB; submit a smaller interval")
     reader = VCF(str(vcf))
     fasta = None
     try:
@@ -64,7 +75,9 @@ def parse_variants(vcf, build, sample=None, reference=None):
 
             fasta = pysam.FastaFile(str(reference))
         records, rejected = [], []
-        for record in reader:
+        for record_number, record in enumerate(reader, 1):
+            if record_number > max_records:
+                raise ValueError("VCF record limit exceeded; submit a smaller candidate set")
             if record.FILTER not in (None, "PASS"):
                 rejected.append({"chrom": record.CHROM, "pos": record.POS, "reason": "VCF_FILTER"})
                 continue
@@ -129,6 +142,8 @@ def parse_variants(vcf, build, sample=None, reference=None):
 
                 ps = fmt("PS")
                 key = f"{build}:{record.CHROM.removeprefix('chr')}:{record.POS}:{record.REF}:{alt}"
+                if len(records) >= max_candidates:
+                    raise ValueError("Candidate limit exceeded; prefilter to at most 1000 alleles")
                 records.append(
                     Variant(
                         key=key,

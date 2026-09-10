@@ -32,12 +32,14 @@ def variant_match(text, query, transcript=None):
     if not re.match(r"^[cgnmp]\.", allele):
         return False
     text = str(text).replace("→", ">").replace("−", "-")
-    explicit = re.findall(r"((?:NM_|NR_|ENST)[A-Za-z0-9_.]+):", text)
-    if explicit and query_transcript and query_transcript not in explicit:
-        return False
-    # Boundaries prevent c.123A>G matching c.123A>GG, and c.123del matching c.123delinsA.
     pattern = r"\s*".join(re.escape(char) for char in allele)
-    return bool(re.search(rf"(?<![A-Za-z0-9_.]){pattern}(?![A-Za-z0-9_])", text))
+    allele_pattern = rf"(?<![A-Za-z0-9_.]){pattern}(?![A-Za-z0-9_])"
+    explicit = re.findall(r"((?:NM_|NR_|ENST)[A-Za-z0-9_.]+)\s*:", text)
+    if explicit and query_transcript:
+        # Bind the accession to THIS allele, not another variant elsewhere in a row.
+        qualified = re.escape(query_transcript) + r"\s*:\s*" + pattern + r"(?![A-Za-z0-9_])"
+        return bool(re.search(r"(?<![A-Za-z0-9_])" + qualified, text))
+    return bool(re.search(allele_pattern, text))
 
 
 def context_verified(row, query, transcript=None):
@@ -88,7 +90,7 @@ def build_database(tables, database):
                 if phase not in {"trans", "cis", "unknown"}:
                     phase = "unknown"
                 con.execute(
-                    "INSERT INTO cases VALUES (" + ",".join(["?"] * 16) + ")",
+                    "INSERT INTO cases VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     [
                         proband,
                         table["document_id"],
@@ -108,6 +110,7 @@ def build_database(tables, database):
                         table.get("synthetic", False),
                     ],
                 )
+        con.execute("CREATE INDEX cases_proband ON cases(document_id, table_id, proband_id)")
         con.execute("COMMIT")
 
 
@@ -159,17 +162,18 @@ def query_variant(database, query, transcript=None, gene=None):
         and (not gene or not r["gene_id"] or r["gene_id"] == gene)
     ]
     evidence = {}
+    neighbor_cache = {}
     for anchor in anchors:
         neighbor_sql = (
             "SELECT * FROM cases WHERE document_id = ? AND table_id = ? AND proband_id = ? ORDER BY row_id"
         )
-        neighbors = (
-            safe_select(
-                database, neighbor_sql, [anchor["document_id"], anchor["table_id"], anchor["proband_id"]]
-            )
-            if anchor["proband_id"]
-            else [anchor]
-        )
+        group = (anchor["document_id"], anchor["table_id"], anchor["proband_id"])
+        if anchor["proband_id"]:
+            if group not in neighbor_cache:
+                neighbor_cache[group] = safe_select(database, neighbor_sql, list(group))
+            neighbors = neighbor_cache[group]
+        else:
+            neighbors = [anchor]
         for row in neighbors:
             if gene and row["gene_id"] and row["gene_id"] != gene:
                 continue
@@ -195,7 +199,9 @@ def query_variant(database, query, transcript=None, gene=None):
                     else "same_proband_context",
                     "query_id": hashlib.sha256((sql + neighbor_sql + query).encode()).hexdigest()[:16],
                     "executed_sql": [sql, neighbor_sql],
-                    "phase_supported": row["phase"] == "trans" and bool(row["phase_method"]),
+                    "phase_supported": False,
+                    "phase_reported_with_method": row["phase"] == "trans" and bool(row["phase_method"]),
+                    "phase_review": "Reported source field; allele-pair phase has not been independently validated",
                 }
             evidence[evidence_id]["retrieval_links"].append(
                 {"anchor_row_id": anchor["row_id"], "direction": direction}

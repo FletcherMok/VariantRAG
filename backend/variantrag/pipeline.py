@@ -27,6 +27,8 @@ def assemble(
         raise ValueError("Synthetic literature can only be used in demo mode")
     database = outdir / "cases.duckdb"
     build_database(literature.get("tables", []), database)
+    input_hash = digest(source_path) if source_path else None
+    database_hash = digest(database)
     bundles = []
     for variant in variants:
         query = variant.get("hgvs_c")
@@ -65,8 +67,8 @@ def assemble(
                 "policy": "Evidence extraction only; co-occurrence does not establish phase",
             },
             provenance={
-                "input": {"path": str(source_path), "sha256": digest(source_path)} if source_path else {},
-                "table_database_sha256": digest(database),
+                "input": {"path": str(source_path), "sha256": input_hash} if source_path else {},
+                "table_database_sha256": database_hash,
                 "literature_artifacts": [
                     {"document_id": document_id, "sha256": source_hash}
                     for document_id, source_hash in sorted(
@@ -115,19 +117,27 @@ def run_pipeline(
         raise ValueError("--mutalyzer-url requires --online to make network access explicit")
     http = CachedHTTP(output / "http_cache") if online else None
     identity_states = {}
-    for variant in variants:
-        states = {}
-        if online:
-            if mutalyzer_url:
-                states["normalization"] = normalize(variant, http, mutalyzer_url)
-                response = states["normalization"].get("data", {}).get("response", {})
-                description = response.get("normalized_description")
-                if states["normalization"]["status"] == "available" and description and ":c." in description:
-                    # Preserve the caller-supplied annotation and store only the returned normalized description.
-                    states["original_hgvs_c"] = variant.get("hgvs_c")
-                    variant["hgvs_c"] = description
-            states["resolution"] = resolve_clinvar(variant, http)
-        identity_states[variant["key"]] = states
+    try:
+        for variant in variants:
+            states = {}
+            if online:
+                if mutalyzer_url:
+                    states["normalization"] = normalize(variant, http, mutalyzer_url)
+                    response = states["normalization"].get("data", {}).get("response", {})
+                    description = response.get("normalized_description")
+                    if (
+                        states["normalization"]["status"] == "available"
+                        and description
+                        and ":c." in description
+                    ):
+                        # Preserve the caller-supplied annotation and store only the returned normalized description.
+                        states["original_hgvs_c"] = variant.get("hgvs_c")
+                        variant["hgvs_c"] = description
+                states["resolution"] = resolve_clinvar(variant, http)
+            identity_states[variant["key"]] = states
+    finally:
+        if http:
+            http.close()
     write_json(output / "variants.json", variants)
     bundles = assemble(variants, literature, output, mode, run_id, vcf, medcpt, bam, reference)
     for bundle in bundles:

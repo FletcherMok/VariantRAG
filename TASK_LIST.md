@@ -24,3 +24,5 @@ Remaining research acceptance gates:
 - [ ] Docker runtime verification and decomposition of all optional research adapters into individual Nextflow processes.
 
 See docs/EVALUATION.md for actual checks and limitations. Implemented interfaces and smoke tests do not establish clinical validity.
+
+Audit follow-up (2026-09-09): disk-first cleanup, packaged demo resources, static UI serving, local API boundaries/retention, conservative transcript/phase fixes, scalable connected comparisons, known-vulnerability scans, MIT licensing, and GitHub preparation are recorded in docs/AUDIT.md. Remaining research gates above still apply.

@@ -43,14 +43,15 @@ def test_catt_keeps_source_records_separate(tmp_path, monkeypatch):
     import csv
 
     from variantrag.grounding import query_catt
-    from variantrag.io import write_json
+    from variantrag.io import digest, write_json
 
     snapshot = tmp_path / "snapshot"
     snapshot.mkdir()
+    (snapshot / "main.py").write_text("# trusted fixture\n")
     write_json(
         snapshot / "manifest.json",
         {
-            "files": {},
+            "files": {"main.py": digest(snapshot / "main.py")},
             "tool_revision": "a" * 40,
             "variant_ids": ["10"],
             "variant_genes": {"10": ["TARGET"]},

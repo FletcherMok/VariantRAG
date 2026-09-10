@@ -22,6 +22,9 @@ class CachedHTTP:
         self.cache = Path(cache)
         self.client = httpx.Client(timeout=30, transport=transport)
 
+    def close(self):
+        self.client.close()
+
     def get(self, url, params=None, ttl=86400, response_format="json"):
         key = hashlib.sha256(json.dumps([url, params, response_format], sort_keys=True).encode()).hexdigest()
         path = self.cache / (key + ".json")

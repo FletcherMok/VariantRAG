@@ -32,11 +32,13 @@ This source BAM lacks SM read-group labels. The fetch script supplies a checksum
 
 ## 3. Prepare research integrations
 
-The optional research environment is larger:
+Use a separate optional environment to keep the core small. Model assistance broadens retrieval; a gain in accuracy has not been established. Read SECURITY.md for the outstanding optional Accelerate advisory:
 
 ```bash
-uv pip install --python .venv/bin/python -r requirements-research.lock
-HF_HOME=backend/data/models/hf .venv/bin/python benchmarks/prepare_medcpt.py
+uv venv --python 3.13 .venv-research
+uv pip install --python .venv-research/bin/python -r requirements-research.lock
+uv pip install --python .venv-research/bin/python --no-deps .
+HF_HOME=backend/data/models/hf .venv-research/bin/python benchmarks/prepare_medcpt.py
 ```
 
 Model weights live under the ignored project cache. The MedCPT manifest records exact query/article repository revisions. The two encoders are independent models. Embedding occurs in a subprocess; FAISS remains outside that process to avoid conflicting native runtimes.
@@ -44,11 +46,11 @@ Model weights live under the ignored project cache. The MedCPT manifest records 
 Ingest a locally available source PDF:
 
 ```bash
-HF_HOME=backend/data/models/hf .venv/bin/variantrag ingest-pdf \
+HF_HOME=backend/data/models/hf .venv-research/bin/variantrag ingest-pdf \
   --pdf source.pdf --document-id PAPER_IDENTIFIER --pmid PMID \
   --out results/literature.json
 
-.venv/bin/variantrag run --vcf annotated.vcf --sample SAMPLE_ID \
+.venv-research/bin/variantrag run --vcf annotated.vcf --sample SAMPLE_ID \
   --literature results/literature.json --medcpt backend/data/models/medcpt \
   --genome-build GRCh38 --out results/research
 ```
@@ -57,7 +59,7 @@ Docling's first run may fetch layout/OCR model files. Confirm the extracted tabl
 
 ## 4. Mutalyzer and CATT
 
-The supplied historical Docker repository describes an older Mutalyzer service. VariantRAG's replacement uses the actual `mutalyzer-api` v3 Flask application and its `/api/normalize/<description>` route.
+VariantRAG provides a small local HTTP adapter around the actual `mutalyzer.normalizer.normalize` library function at `/api/normalize/<description>`. The obsolete Flask API wrapper was removed to avoid its dependency on vulnerable old setuptools.
 
 With Docker running:
 
@@ -67,7 +69,23 @@ docker compose -f backend/docker/docker-compose.yml --profile research up --buil
 
 The real normalizer is at `http://127.0.0.1:5000/api`; the workbench API is at port 8000. The Mutalyzer cache is a named volume configured via `MUTALYZER_SETTINGS`. Upstream reference retrieval is still needed for cold transcript/genomic references. The v3 route and a sequence-supplied repeat normalization were verified; a cold BRAF transcript request timed out here. Do not treat that as a normalized variant or assume the cache is already primed.
 
-For a native Mutalyzer deployment, create a settings file with `MUTALYZER_CACHE_DIR` pointing to an absolute cache directory, set `MUTALYZER_SETTINGS` to that file, and prime required references with the upstream retriever before full runs. Use the locked Mutalyzer environment, including `setuptools==80.10.2`, required by the current API package's `pkg_resources` import.
+For a native local deployment, install only the normalizer environment:
+
+```bash
+uv venv --python 3.13 .venv-normalizer
+uv pip install --python .venv-normalizer/bin/python -r requirements-mutalyzer.lock
+.venv-normalizer/bin/python scripts/patch_mutalyzer_metadata.py
+PYTHONPATH=backend .venv-normalizer/bin/python -m uvicorn \
+  variantrag.normalizer_api:app --host 127.0.0.1 --port 5000 --limit-concurrency 2
+```
+
+Configure `MUTALYZER_SETTINGS` and an absolute `MUTALYZER_CACHE_DIR` if persistent reference caching is needed. Cold reference retrieval remains a network dependency. Three pinned Mutalyzer dependencies still import removed `pkg_resources` solely for package metadata. The checksum-guarded compatibility script replaces only those metadata lookups with `importlib.metadata`; the Dockerfile applies the same patch. No normalization or coordinate-conversion code is changed. This adapter wraps the real normalization library; it does not reproduce every endpoint of the upstream web application.
+
+For CATT without PDF/model packages:
+
+```bash
+uv pip install --python .venv/bin/python -r requirements-catt.lock
+```
 
 CATT is pinned to commit `6815e6a2d67439c0f899416060e0d997d6d07dd8`. Use a bounded snapshot on this Mac, retaining selected Variation IDs and their linked genes:
 
@@ -79,7 +97,7 @@ CATT is pinned to commit `6815e6a2d67439c0f899416060e0d997d6d07dd8`. Use a bound
 
 Bounded refresh scans compressed upstream releases one at a time, retains only matching rows, and deletes each temporary download. Initial network transfer still includes the full source archives (about 860 MB at this checkpoint); subsequent queries are local. Omit `--variant-ids` only when intentionally preparing a full cache on a larger machine.
 
-The checkout must match that full commit. Snapshots are immutable; choose a new destination for each refresh. Query workers copy the snapshot to avoid CATT mutating resources used by other runs. Each source is queried separately, preserving source record identifiers and avoiding cross-source row multiplication. The full workflow can need substantial RAM/disk because upstream loads flat files into pandas and query copies duplicate them. The four primary sources were reachable during validation; a full refresh is not represented as already validated on this 16 GB Mac.
+The checkout must match that full commit. Snapshots are immutable; choose a new destination for each refresh. New snapshots checksum executable code as well as data; legacy snapshots must be rebuilt or migrated from a verified trusted checkout. Query workers copy the snapshot to avoid CATT mutating resources used by other runs. Each source is queried separately, preserving source record identifiers and avoiding cross-source row multiplication. The full workflow can need substantial RAM/disk because upstream loads flat files into pandas and query copies duplicate them. The four primary sources were reachable during validation; a full refresh is not represented as already validated on this 16 GB Mac.
 
 A verified snapshot can be used with explicit network opt-in:
 
@@ -123,3 +141,9 @@ Inspect both presentation orders, disagreement rates, graph coverage, and citati
 ```
 
 Label records contain `case_id` and `expected_evidence_ids`; predictions contain `case_id` and `evidence_ids`. Keep publication/family groups together when building new splits. Report corpus availability and abstentions, rather than evaluating only successful retrievals.
+
+## Disk maintenance
+
+`python3 scripts/storage.py` reports both logical and allocated sizes. On iCloud-backed Desktop folders, offloaded files may occupy little physical disk while still representing large future downloads. `--clean --frontend-deps` removes rebuildable frontend/build caches after a successful static export. It preserves results and model manifests. Use **Delete this run** in the interface to remove completed work you no longer need. The default retained-run cap is 100 (`VARIANTRAG_MAX_RUNS`).
+
+To enable MedCPT in the interface, start the API with `.venv-research/bin/python`, prepare both models, and supply a literature corpus. Choosing the option without setup returns an explicit error. The default exact-HGVS mode does not download or load models.

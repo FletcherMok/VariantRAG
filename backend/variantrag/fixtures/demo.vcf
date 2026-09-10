@@ -1,0 +1,9 @@
+##fileformat=VCFv4.2
+##reference=GRCh38
+##contig=<ID=1,length=248956422>
+##INFO=<ID=CSQ,Number=.,Type=String,Description="VEP annotations. Format: Allele|Consequence|SYMBOL|Feature|HGVSc|HGVSp|ALLELE_NUM">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	DEMO
+1	100	.	A	G,T	60	PASS	CSQ=G|missense_variant|DEMO1|NM_DEMO.1|NM_DEMO.1:c.123A>G|p.Lys41Arg|1,T|synonymous_variant|DEMO1|NM_DEMO.1|NM_DEMO.1:c.123A>T|p.Lys41=|2	GT	1/2
+1	200	.	C	T	50	PASS	CSQ=T|stop_gained|DEMO2|NM_DEMO2.1|NM_DEMO2.1:c.456C>T|p.Gln152Ter|1	GT	0/1
+1	300	.	G	A	50	PASS	CSQ=A|missense_variant|DEMO3|NM_DEMO3.1|NM_DEMO3.1:c.789G>A|p.Gly263Ser|1	GT	0/1

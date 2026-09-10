@@ -1,18 +1,21 @@
 [build-system]
-requires = ["setuptools>=75"]
+requires = ["setuptools>=83"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "variantrag"
 version = "0.2.0"
 description = "Provenance-first variant evidence workbench"
+license = "MIT"
+readme = "README.md"
 requires-python = ">=3.11,<3.14"
-dependencies = ["cyvcf2", "pysam", "duckdb", "pydantic>=2", "httpx", "scipy", "sqlglot", "fastapi", "uvicorn", "python-multipart"]
+dependencies = ["cyvcf2", "pysam", "duckdb", "pydantic>=2", "httpx", "scipy", "sqlglot", "fastapi", "uvicorn", "python-multipart", "defusedxml"]
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff"]
 literature = ["docling", "transformers", "torch", "faiss-cpu", "defusedxml"]
-grounding = ["mutalyzer==3.1.1", "mutalyzer-api==0.3.2", "setuptools<81", "genshi", "dateparser", "scikit-learn", "pandas", "pyyaml", "requests"]
+grounding = ["genshi", "dateparser", "scikit-learn", "pandas", "pyyaml", "requests"]
+normalization = ["mutalyzer==3.1.1"]
 
 [project.scripts]
 variantrag = "variantrag.cli:main"
@@ -31,3 +34,6 @@ line-length = 110
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I", "B"]
 ignore = ["B008"] # FastAPI parameter declarations
+
+[tool.setuptools.package-data]
+variantrag = ["fixtures/*.vcf", "fixtures/*.json"]

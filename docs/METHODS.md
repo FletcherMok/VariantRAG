@@ -45,3 +45,7 @@ The local Ollama adapter pins the installed model digest and saves both raw judg
 The structural adapter requires an explicit transcript/build/UniProt mapping and matching protein sequence/residue before looking up AlphaFold. It does not infer a canonical isoform from a gene symbol, invent a model, or add a confidence-based pathogenicity score. Automatic transcript-to-UniProt mapping and residue pLDDT extraction are not yet validated.
 
 PM3 interpretation requires disease-appropriate evidence, classification independence, rarity, phase assessment, and duplicate-case review. Extraction alone does not perform those tasks. [ClinGen guidance](https://www.clinicalgenome.org/docs/pm3-recommendation-for-in-trans-criterion-pm3-version-1.0/) and [Richards et al.](https://pmc.ncbi.nlm.nih.gov/articles/PMC4544753/) are the starting references.
+
+## Audit clarifications (2026-09-09)
+
+A transcript-qualified allele must match its own accession; another accession elsewhere in the same row is insufficient. Reported trans phase and a method string are preserved as source fields, but `phase_supported` remains false until allele-pair phase is independently reviewed. Sparse comparison schedules start with a spanning path, then add distinct balanced opponents up to the budget. This guarantees scheduled connectivity, not decisive connectivity or clinical validity.

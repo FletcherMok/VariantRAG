@@ -25,3 +25,14 @@ frontend/tsconfig.tsbuildinfo
 
 build/
 dist/
+
+# Downloaded genomic assets; synthetic fixtures stay tracked.
+*.bai
+*.crai
+*.tbi
+*.csi
+*.bam
+*.cram
+*.vcf.gz
+frontend/out/
+.venv-*/

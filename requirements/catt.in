@@ -1,0 +1,6 @@
+genshi==0.7.11
+dateparser==1.4.3
+scikit-learn==1.9.0
+pandas==3.0.5
+pyyaml==6.0.3
+requests==2.34.2

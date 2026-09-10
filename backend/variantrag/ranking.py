@@ -33,20 +33,25 @@ def baseline_compare(a, b):
     }
 
 
-def schedule(n, budget=120):
-    if n <= 30:
-        return list(itertools.combinations(range(n), 2))
-    if budget < n - 1:
+def schedule(n, budget=None):
+    total = n * (n - 1) // 2
+    budget = min(total, max(120, n - 1) if budget is None else budget)
+    if budget < max(0, n - 1):
         raise ValueError("Pair budget must allow a connected comparison graph (at least n-1)")
-    # Circle method: round-by-round balanced opponents, independent of input presentation order.
+    if budget >= total:
+        return list(itertools.combinations(range(n), 2))
+    # Seed a spanning path: a merely large enough budget does not guarantee connectivity.
+    pairs = [(i, i + 1) for i in range(n - 1)]
+    seen = set(pairs)
     ring = list(range(n)) + ([-1] if n % 2 else [])
-    pairs = []
     for _ in range(len(ring) - 1):
         for left, right in zip(ring[: len(ring) // 2], reversed(ring[len(ring) // 2 :]), strict=True):
-            if left != -1 and right != -1:
-                pairs.append(tuple(sorted((left, right))))
-                if len(pairs) == budget:
-                    return pairs
+            if len(pairs) >= budget:
+                return pairs
+            pair = tuple(sorted((left, right)))
+            if left != -1 and right != -1 and pair not in seen:
+                pairs.append(pair)
+                seen.add(pair)
         ring = [ring[0], ring[-1], *ring[1:-1]]
     return pairs
 
@@ -92,7 +97,7 @@ def components(n, edges):
     return groups
 
 
-def rank(records, comparator=None, budget=120, method="evidence_availability_baseline"):
+def rank(records, comparator=None, budget=None, method="evidence_availability_baseline"):
     bundles = sorted(validate_bundles(records), key=lambda b: b.variant.key)
     comparator = comparator or baseline_compare
     n = len(bundles)
@@ -163,11 +168,12 @@ def rank(records, comparator=None, budget=120, method="evidence_availability_bas
         for i in order
     ]
     edges = set(outcomes)
-    cycles = sum(
-        ((a, b) in edges and (b, c) in edges and (c, a) in edges)
-        or ((b, a) in edges and (c, b) in edges and (a, c) in edges)
-        for a, b, c in itertools.combinations(range(n), 3)
-    )
+    outgoing = defaultdict(set)
+    incoming = defaultdict(set)
+    for winner, loser in edges:
+        outgoing[winner].add(loser)
+        incoming[loser].add(winner)
+    cycles = sum(len(outgoing[b] & incoming[a]) for a, b in edges) // 3
     return {
         "schema_version": "1.0",
         "method": method,

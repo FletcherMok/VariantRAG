@@ -7,6 +7,7 @@ from .tables import variant_match
 def extract_pdf(path, document_id, pmid=None):
     from docling.document_converter import DocumentConverter
 
+    source_hash = digest(path)
     doc = DocumentConverter().convert(str(path)).document
     passages, tables = [], []
     for index, item in enumerate(doc.texts):
@@ -22,7 +23,7 @@ def extract_pdf(path, document_id, pmid=None):
                 "text": text,
                 "page": provenance.page_no if provenance else None,
                 "offsets": [0, len(text)],
-                "source_hash": digest(path),
+                "source_hash": source_hash,
                 "synthetic": False,
             }
         )
@@ -38,7 +39,7 @@ def extract_pdf(path, document_id, pmid=None):
                     {"row_id": row, "cells": [str(v) for v in values]}
                     for row, values in enumerate(frame.itertuples(index=False, name=None))
                 ],
-                "source_hash": digest(path),
+                "source_hash": source_hash,
                 "synthetic": False,
             }
         )
@@ -148,6 +149,7 @@ def extract_bioc(path, document_id, pmid=None):
     """Read native BioC passages and embedded XML tables without whitespace table heuristics."""
     from defusedxml import ElementTree as ET
 
+    source_hash = digest(path)
     root = ET.parse(path).getroot()
     passages, tables = [], []
     for index, passage in enumerate(root.findall(".//passage")):
@@ -169,7 +171,7 @@ def extract_bioc(path, document_id, pmid=None):
                     "table_id": info.get("id", str(index)),
                     "headers": headers,
                     "rows": rows,
-                    "source_hash": digest(path),
+                    "source_hash": source_hash,
                     "synthetic": False,
                 }
             )
@@ -182,7 +184,7 @@ def extract_bioc(path, document_id, pmid=None):
                     "chunk_id": str(index),
                     "text": text,
                     "offsets": [offset, offset + len(text)],
-                    "source_hash": digest(path),
+                    "source_hash": source_hash,
                     "synthetic": False,
                 }
             )

@@ -1,0 +1,10 @@
+-r requirements.lock
+iniconfig==2.3.0
+pluggy==1.6.0
+pygments==2.21.0
+pytest==9.1.1
+ruff==0.16.6
+pyyaml==6.0.3
+requests==2.34.2
+charset-normalizer==3.5.1
+urllib3==2.7.0

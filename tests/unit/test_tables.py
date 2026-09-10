@@ -30,7 +30,8 @@ def test_bidirectional_proband_recovery_and_scope(tmp_path):
     assert rows[0]["retrieval_links"][0]["direction"] == "upstream"
     assert rows[2]["retrieval_links"][0]["direction"] == "downstream"
     assert rows[0]["phase_supported"] is False
-    assert rows[2]["phase_supported"] is True
+    assert rows[2]["phase_supported"] is False
+    assert rows[2]["phase_reported_with_method"] is True
     assert all(r["document_id"] == "paper" and r["table_id"] == "T1" for r in rows)
 
 

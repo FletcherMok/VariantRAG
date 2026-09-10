@@ -17,11 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.13'
-      - run: pip install -r requirements-research.lock
+      - run: pip install -r requirements-catt.lock
       - name: Fetch pinned CATT
         env:
           CATT_VARIANT_IDS: ${{ inputs.variant_ids }}
@@ -32,7 +32,7 @@ jobs:
           git clone https://github.com/mgbpm/CATT.git catt-upstream
           git -C catt-upstream checkout --detach "$CATT_REVISION"
           PYTHONPATH=backend python -m variantrag.cli catt-refresh --checkout catt-upstream --revision "$CATT_REVISION" --variant-ids "$CATT_VARIANT_IDS" --out results/catt-snapshot
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: catt-snapshot
           path: results/catt-snapshot
