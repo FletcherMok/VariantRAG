@@ -1,0 +1,19 @@
+{
+  "source": "https://github.com/HKU-BAL/AutoPM3/blob/main/PM3-Bench/PM3_Bench_data.json",
+  "sha256": "77261f23674b0f5b20cc8ff4dd37e25963933890634dd74357dd1a33eb52b4b9",
+  "rows": 1027,
+  "upstream_split_counts": {
+    "fine-tune": 760,
+    "eval": 195,
+    "others": 72
+  },
+  "cross_split_publications": {},
+  "policy": "Never use Raw Comment or In trans Variants as retrieval corpus; these are labels. Group by PMID before a new held-out evaluation.",
+  "smoke_case": {
+    "pmid": "35886058",
+    "pmcid": "PMC9319862",
+    "variant": "NM_001033855.3:c.95C>G",
+    "upstream_split": "eval",
+    "use": "Exploratory integration check, not a held-out performance estimate"
+  }
+}

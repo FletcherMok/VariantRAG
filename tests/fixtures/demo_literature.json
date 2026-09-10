@@ -1,0 +1,107 @@
+{
+  "synthetic": true,
+  "description": "Entirely synthetic demonstration; identifiers and case facts are not biological assertions.",
+  "passages": [
+    {
+      "document_id": "DEMO-PAPER",
+      "chunk_id": "paragraph-1",
+      "text": "Synthetic example: NM_DEMO.1:c.123A>G is listed for case P1. Phase requires source review.",
+      "page": 1,
+      "offsets": [
+        0,
+        104
+      ],
+      "synthetic": true
+    }
+  ],
+  "tables": [
+    {
+      "document_id": "DEMO-PAPER",
+      "table_id": "T1",
+      "synthetic": true,
+      "headers": [
+        "proband_id",
+        "variant",
+        "gene",
+        "transcript",
+        "phase",
+        "phase_method",
+        "phenotype",
+        "classification",
+        "classification_source"
+      ],
+      "rows": [
+        {
+          "row_id": 0,
+          "cells": [
+            "P1",
+            "c.90del",
+            "DEMO1",
+            "NM_DEMO.1",
+            "unknown",
+            "",
+            "Synthetic phenotype",
+            "",
+            ""
+          ]
+        },
+        {
+          "row_id": 1,
+          "cells": [
+            "P1",
+            "c.123A>G",
+            "DEMO1",
+            "NM_DEMO.1",
+            "unknown",
+            "",
+            "Synthetic phenotype",
+            "",
+            ""
+          ]
+        },
+        {
+          "row_id": 2,
+          "cells": [
+            "P1",
+            "c.678G>T",
+            "DEMO1",
+            "NM_DEMO.1",
+            "unknown",
+            "",
+            "Synthetic phenotype",
+            "",
+            ""
+          ]
+        },
+        {
+          "row_id": 3,
+          "cells": [
+            "P2",
+            "0.91234",
+            "DEMO1",
+            "NM_DEMO.1",
+            "unknown",
+            "",
+            "Statistic, not variant",
+            "",
+            ""
+          ]
+        },
+        {
+          "row_id": 4,
+          "cells": [
+            "P3",
+            "c.123A>G",
+            "DEMO1",
+            "NM_DEMO.1",
+            "unknown",
+            "",
+            "Synthetic phenotype",
+            "",
+            ""
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+services:
+  workbench:
+    image: variantrag:0.2.0
+    build:
+      context: ../..
+      dockerfile: backend/docker/Dockerfile
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - workbench-data:/app/backend/data
+  mutalyzer:
+    profiles: [research]
+    build:
+      context: ../..
+      dockerfile: backend/docker/Mutalyzer.Dockerfile
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - mutalyzer-cache:/cache
+volumes:
+  workbench-data:
+  mutalyzer-cache:

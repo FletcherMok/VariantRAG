@@ -1,0 +1,39 @@
+name: CATT snapshot (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: Full upstream CATT commit SHA to refresh
+        required: true
+        type: string
+      variant_ids:
+        description: Comma-separated ClinVar Variation IDs for a bounded snapshot
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r requirements-research.lock
+      - name: Fetch pinned CATT
+        env:
+          CATT_VARIANT_IDS: ${{ inputs.variant_ids }}
+          CATT_REVISION: ${{ inputs.revision }}
+        run: |
+          [[ "$CATT_REVISION" =~ ^[a-f0-9]{40}$ ]] || exit 2
+          [[ "$CATT_VARIANT_IDS" =~ ^[0-9]+(,[0-9]+)*$ ]] || exit 2
+          git clone https://github.com/mgbpm/CATT.git catt-upstream
+          git -C catt-upstream checkout --detach "$CATT_REVISION"
+          PYTHONPATH=backend python -m variantrag.cli catt-refresh --checkout catt-upstream --revision "$CATT_REVISION" --variant-ids "$CATT_VARIANT_IDS" --out results/catt-snapshot
+      - uses: actions/upload-artifact@v4
+        with:
+          name: catt-snapshot
+          path: results/catt-snapshot
+          retention-days: 7

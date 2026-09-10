@@ -1,0 +1,13 @@
+.git
+.venv
+node_modules
+frontend/node_modules
+frontend/.next
+backend/data
+backend/docker/ollama_data
+__pycache__
+**/__pycache__
+results
+work
+.nextflow*
+.env
