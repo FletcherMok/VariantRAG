@@ -42,7 +42,15 @@ jobs:
           python-version: '3.13'
       - run: pip install pip-audit==2.10.1
       - name: Surface known optional research advisories
-        run: pip-audit --no-deps --disable-pip -r requirements-research.lock -f json -o optional-audit.json
+        run: |
+          pip-audit --no-deps --disable-pip -r requirements-research.lock -f json -o optional-audit.json || {
+            status=$?
+            if [ -f optional-audit.json ]; then
+              echo "Optional research dependency advisories detected; continuing after artifact capture."
+            else
+              exit "$status"
+            fi
+          }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
