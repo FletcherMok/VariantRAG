@@ -1,0 +1,3 @@
+# Keep the existing nested entry point usable; both share one project and volumes.
+include:
+  - backend/docker/docker-compose.yml

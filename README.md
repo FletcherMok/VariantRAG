@@ -1,5 +1,7 @@
 # VariantRAG
 
+**Docker:** `docker compose up --build -d --wait`, then open http://127.0.0.1:8000. See [container setup and validation](docs/DOCKER.md).
+
 **An inspectable workbench for variant evidence retrieval and case-table review.**
 
 Given an annotated VCF and a literature corpus, VariantRAG identifies candidate alleles, retrieves source passages, and uses DuckDB to recover earlier and later rows belonging to the same proband within the same table. Frozen evidence bundles make every comparison replayable.

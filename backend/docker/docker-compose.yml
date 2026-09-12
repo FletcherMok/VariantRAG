@@ -1,3 +1,4 @@
+name: variantrag
 services:
   workbench:
     image: variantrag:0.2.0
@@ -8,8 +9,26 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - workbench-data:/app/backend/data
+    environment:
+      VARIANTRAG_MAX_RUNS: "100"
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 2g
+    cpus: 2
+    pids_limit: 128
+    stop_grace_period: 30s
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "2"
   mutalyzer:
     profiles: [research]
+    image: variantrag-mutalyzer:0.2.0
     build:
       context: ../..
       dockerfile: backend/docker/Mutalyzer.Dockerfile
@@ -17,6 +36,20 @@ services:
       - "127.0.0.1:5000:5000"
     volumes:
       - mutalyzer-cache:/cache
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1g
+    cpus: 1
+    pids_limit: 128
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "2"
 volumes:
   workbench-data:
   mutalyzer-cache:

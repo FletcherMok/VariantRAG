@@ -7,7 +7,12 @@ from .security import LocalBoundary
 
 app = FastAPI(title="VariantRAG local Mutalyzer adapter")
 app.add_middleware(LocalBoundary)
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]"])
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]", "mutalyzer"])
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.get("/api/normalize/{description:path}")

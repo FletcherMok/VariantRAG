@@ -61,7 +61,7 @@ Docling's first run may fetch layout/OCR model files. Confirm the extracted tabl
 
 VariantRAG provides a small local HTTP adapter around the actual `mutalyzer.normalizer.normalize` library function at `/api/normalize/<description>`. The obsolete Flask API wrapper was removed to avoid its dependency on vulnerable old setuptools.
 
-With Docker running:
+See [Docker setup](DOCKER.md) for resource limits, persistent storage, and container smoke tests. With Docker running:
 
 ```bash
 docker compose -f backend/docker/docker-compose.yml --profile research up --build
